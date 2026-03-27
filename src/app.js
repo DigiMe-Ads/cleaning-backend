@@ -12,7 +12,7 @@ console.log('bookingRoutes type:', typeof bookingRoutes);
 const app = express();
 
 app.use(cors({
-  origin: 'https://venerable-concha-265a1f.netlify.app',
+  origin: 'https://cleaning-frontend-six.vercel.app',
   credentials: true,
 }));
 

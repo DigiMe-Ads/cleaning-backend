@@ -12,7 +12,7 @@ console.log('bookingRoutes type:', typeof bookingRoutes);
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://venerable-concha-265a1f.netlify.app',
   credentials: true,
 }));
 

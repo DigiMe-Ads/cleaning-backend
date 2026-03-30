@@ -16,10 +16,19 @@ const bookingValidation = [
 // Client routes
 router.post('/', protect, allowRoles('client', 'admin'), bookingValidation, bookingController.createBooking);
 router.get('/my-bookings', protect, allowRoles('client'), bookingController.getMyBookings);
+
+// Cleaner routes
+router.get('/my-assignments', protect, allowRoles('cleaner'), bookingController.getMyCleanerBookings);
+router.get('/my-assignments/by-date', protect, allowRoles('cleaner'), bookingController.getCleanerBookingsByDate);
+
+// Shared — cleaner or admin can update cleaning status
+router.patch('/:id/cleaning-status', protect, allowRoles('cleaner', 'admin'), bookingController.updateCleaningStatus);
+
+// Client or admin
 router.delete('/:id', protect, allowRoles('client', 'admin'), bookingController.deleteBooking);
 router.patch('/:id', protect, allowRoles('client', 'admin'), bookingController.updateBooking);
 
-// Admin only routes
+// Admin only
 router.get('/by-date', protect, allowRoles('admin'), bookingController.getBookingsByDate);
 router.get('/', protect, allowRoles('admin'), bookingController.getAllBookings);
 

@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const propertyRoutes = require('./routes/property.routes');
+const userRoutes = require('./routes/user.routes');
 
 console.log('authRoutes type:', typeof authRoutes);
 console.log('bookingRoutes type:', typeof bookingRoutes);
@@ -12,7 +13,7 @@ console.log('bookingRoutes type:', typeof bookingRoutes);
 const app = express();
 
 app.use(cors({
-  origin: 'https://cleaning-frontend-six.vercel.app',
+  origin: 'https://cleaning-frontend-yj8r.vercel.app',
   credentials: true,
 }));
 
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/properties', propertyRoutes);
+app.use('/api/users', userRoutes);
 
 
 app.use((err, req, res, next) => {

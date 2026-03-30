@@ -11,6 +11,7 @@ const createBooking = async ({ property_id, checkin_date, checkin_time, checkout
       checkout_time,
       notes,
       client_id,
+      cleaning_status: 'unassigned',
     })
     .select()
     .single();
@@ -24,8 +25,9 @@ const getAllBookings = async () => {
     .from('bookings')
     .select(`
       *,
-      users(name, email),
-      properties(name, location)
+      users!bookings_client_id_fkey(name, email),
+      properties(name, location),
+      cleaners:users!bookings_cleaner_id_fkey(id, name, email)
     `)
     .order('checkout_date', { ascending: true });
 
@@ -38,9 +40,25 @@ const getClientBookings = async (clientId) => {
     .from('bookings')
     .select(`
       *,
-      properties(name, location)
+      properties(name, location),
+      cleaners:users!bookings_cleaner_id_fkey(id, name, email)
     `)
     .eq('client_id', clientId)
+    .order('checkout_date', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const getCleanerBookings = async (cleanerId) => {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      *,
+      properties(name, location),
+      users!bookings_client_id_fkey(name, email)
+    `)
+    .eq('cleaner_id', cleanerId)
     .order('checkout_date', { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -52,10 +70,27 @@ const getBookingsByDate = async (date) => {
     .from('bookings')
     .select(`
       *,
-      users(name, email),
-      properties(name, location)
+      users!bookings_client_id_fkey(name, email),
+      properties(name, location),
+      cleaners:users!bookings_cleaner_id_fkey(id, name, email)
     `)
     .eq('checkout_date', date)
+    .order('checkout_time', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const getCleanerBookingsByDate = async (date, cleanerId) => {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      *,
+      properties(name, location),
+      users!bookings_client_id_fkey(name, email)
+    `)
+    .eq('checkout_date', date)
+    .eq('cleaner_id', cleanerId)
     .order('checkout_time', { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -92,8 +127,7 @@ const updateBooking = async (id, updates, userId, userRole) => {
   return data;
 };
 
-const deleteBooking = async (id, userId, userRole) => {
-  // First fetch the booking
+const updateCleaningStatus = async (id, cleaning_status, userId, userRole) => {
   const { data: booking, error: fetchError } = await supabase
     .from('bookings')
     .select('*')
@@ -106,7 +140,37 @@ const deleteBooking = async (id, userId, userRole) => {
     throw error;
   }
 
-  // Clients can only delete their own bookings
+  // Cleaners can only update cleaning_status on bookings assigned to them
+  if (userRole === 'cleaner' && booking.cleaner_id !== userId) {
+    const error = new Error('You can only update cleaning status for your assigned bookings');
+    error.status = 403;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({ cleaning_status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const deleteBooking = async (id, userId, userRole) => {
+  const { data: booking, error: fetchError } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !booking) {
+    const error = new Error('Booking not found');
+    error.status = 404;
+    throw error;
+  }
+
   if (userRole === 'client' && booking.client_id !== userId) {
     const error = new Error('You do not have permission to delete this booking');
     error.status = 403;
@@ -126,7 +190,10 @@ module.exports = {
   createBooking,
   getAllBookings,
   getClientBookings,
+  getCleanerBookings,
   getBookingsByDate,
+  getCleanerBookingsByDate,
   updateBooking,
+  updateCleaningStatus,
   deleteBooking,
 };

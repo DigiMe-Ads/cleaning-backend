@@ -4,13 +4,8 @@ const createBooking = async ({ property_id, checkin_date, checkin_time, checkout
   const { data, error } = await supabase
     .from('bookings')
     .insert({
-      property_id,
-      checkin_date,
-      checkin_time,
-      checkout_date,
-      checkout_time,
-      notes,
-      client_id,
+      property_id, checkin_date, checkin_time,
+      checkout_date, checkout_time, notes, client_id,
       cleaning_status: 'unassigned',
     })
     .select()
@@ -140,16 +135,18 @@ const updateCleaningStatus = async (id, cleaning_status, userId, userRole) => {
     throw error;
   }
 
-  // Cleaners can only update cleaning_status on bookings assigned to them
   if (userRole === 'cleaner' && booking.cleaner_id !== userId) {
     const error = new Error('You can only update cleaning status for your assigned bookings');
     error.status = 403;
     throw error;
   }
 
+  // If cleaning is done, silently mark booking as completed
+  const extraUpdates = cleaning_status === 'done' ? { status: 'completed' } : {};
+
   const { data, error } = await supabase
     .from('bookings')
-    .update({ cleaning_status })
+    .update({ cleaning_status, ...extraUpdates })
     .eq('id', id)
     .select()
     .single();
